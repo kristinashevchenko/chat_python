@@ -13,6 +13,12 @@ def receive():
         try:
             msg = client_socket.recv(BUFSIZE).decode('utf-8')
             print(msg)
+
+            # client disconnected manually
+            if msg == "{quit}":
+                client_socket.close()
+                break
+
         except OSError:
             break
 
@@ -22,6 +28,10 @@ def send():
         try:
             send_str = input()
             client_socket.send(bytes(send_str, 'utf-8'))
+
+            if send_str == "{quit}":
+                break
+
         except EOFError:
             client_socket.close()
             break
