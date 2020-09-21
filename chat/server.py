@@ -4,7 +4,7 @@ import datetime
 import random
 
 clients = {}
-addresses = {}
+players = []
 
 HOST = "127.0.0.1"
 PORT = 4203
@@ -24,7 +24,6 @@ def count_participants(client):
     send_str = "Server response: %s participants in chat." % len(clients)
     print(send_str)
     sendToClients(bytes(send_str, "utf8"), "", client)
-   
 
 def get_participants_names(client):
     clientNames = list(clients.values())
@@ -56,23 +55,41 @@ def accept_connections():
     while True:
         client, client_address = SERVER.accept()
         print("%s:%s has connected." % client_address)
-        addresses[client] = client_address
         Thread(target=handle_client, args=(client,)).start()
+
+def handle_cmd(msg, client):
+    if msg == "cmd!count-participants":
+        count_participants(client)
+    elif msg =="cmd!get-names":
+        get_participants_names(client)
+    elif msg == "cmd!get-time":
+        current_server_time(client) 
+    elif msg == "cmd!rock-paper-scissors":
+        name = clients[client]
+        send_str = "Let's play game, %s! Enter 'paper', rock' or 'scissors' value" % name
+        print(send_str)
+        client.send(bytes(send_str, "utf8"))
+        players.append(name)
+    else:
+        send_str = "This command is not supported"
+        print(send_str)
+        client.send(bytes(send_str, "utf8"))
 
 def handle_client(client):
     name = client.recv(BUFSIZ).decode("utf8")
-    welcome = "Welcome %s! If you ever want to quit, press CTRL+C or type {quit} to exit." % name
+    welcome = "Welcome %s! If you ever want to quit, press CTRL+C to exit." % name
     client.send(bytes(welcome, "utf8"))
     msg = "%s has joined the chat!" % name
     sendToClients(bytes(msg, "utf8"))
     clients[client] = name
-    is_playing_game = False
 
     while True:
         try:
             msg = client.recv(BUFSIZ).decode("utf-8")
 
-            if is_playing_game:
+            is_cmd = msg.startswith("cmd!")
+
+            if name in players:
                 server_value = random_value()
                 game_result = play_game(msg, server_value)
                 send_str = 'Server choose %s value' % server_value
@@ -80,26 +97,9 @@ def handle_client(client):
                 client.send(bytes(send_str, "utf8"))
                 print(game_result)
                 client.send(bytes(game_result, "utf8"))
-                is_playing_game = False
-            elif msg == "cmd!count-participants":
-                count_participants(client)
-            elif msg =="cmd!get-names":
-                get_participants_names(client)
-            elif msg == "cmd!get-time":
-                current_server_time(client) 
-            elif msg == "cmd!rock-paper-scissors":
-                send_str = "Let's play game, %s! Enter 'paper', rock' or 'scissors' value" % name
-                print(send_str)
-                client.send(bytes(send_str, "utf8"))
-                is_playing_game = True
-            elif msg == "{quit}":
-                client.send(bytes("{quit}", "utf8"))
-                client.close()
-                del clients[client]
-                send_str = "%s has left the chat." % name
-                print(send_str)
-                sendToClients(bytes(send_str, "utf8"))
-                break
+                players.remove(name)
+            elif is_cmd:
+                handle_cmd(msg, client)
             else:
                 print("%s: %s" % (name, msg))
                 sendToClients(bytes(msg, "utf8"), name+": ")
