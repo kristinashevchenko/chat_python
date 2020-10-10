@@ -12,10 +12,10 @@ BUFSIZ = 1024
 ADDR = (HOST, PORT)
 
 GAME_WIN = {
-                ("paper", "rock"),
-                ("rock", "scissors"),
-                ("scissors", "paper")
-            }
+    ("paper", "rock"),
+    ("rock", "scissors"),
+    ("scissors", "paper")
+}
 
 SERVER = socket(AF_INET, SOCK_STREAM)
 SERVER.bind(ADDR)
@@ -49,6 +49,16 @@ def random_value():
     return random.choice(["paper", "rock", "scissors"])
 
 
+def start_game(client):
+    name = clients[client]
+    send_str = "Let's play game, %s!" \
+               " Enter 'paper', rock' or 'scissors' value" % name
+
+    print(send_str)
+    send_to_clients(send_str, client)
+    players.append(name)
+
+
 def play_game(user_value, server_value):
     if user_value not in ["paper", "rock", "scissors"]:
         return "Invalid value. You failed!"
@@ -60,20 +70,17 @@ def play_game(user_value, server_value):
         return "You failed!"
 
 
-def handle_cmd(msg, client):
-    if msg == "cmd!count-participants":
-        count_participants(client)
-    elif msg =="cmd!get-names":
-        get_participants_names(client)
-    elif msg == "cmd!get-time":
-        current_server_time(client) 
-    elif msg == "cmd!rock-paper-scissors":
-        name = clients[client]
-        send_str = "Let's play game, %s! Enter 'paper', rock' or 'scissors' value" % name
+cmd_handlers = {
+    "cmd!count-participants": count_participants,
+    "cmd!get-names": get_participants_names,
+    "cmd!get-time": current_server_time,
+    "cmd!rock-paper-scissors": start_game
+}
 
-        print(send_str)
-        send_to_clients(send_str, client)
-        players.append(name)
+
+def handle_cmd(msg, client):
+    if msg in cmd_handlers.keys():
+        cmd_handlers[msg](client)
     else:
         send_str = "This command is not supported"
 
@@ -89,12 +96,47 @@ def send_to_clients(msg, client=""):
         for sock in clients:
             sock.send(msg)
 
+
 def receive_message(client):
     try:
         msg = client.recv(BUFSIZ).decode("utf-8")
         return msg
-    except:
+    except ConnectionResetError:
         return False
+
+
+def client_joined_event(name, client_socket):
+    welcome = "Welcome %s! " \
+              "If you ever want to quit, press CTRL+C to exit." % name
+
+    message = "%s has joined the chat!" % name
+
+    send_to_clients(welcome, client_socket)
+    print(message)
+    send_to_clients(message)
+
+    clients[client_socket] = name
+
+
+def client_exited_event(name, client_socket):
+    readable_sockets.remove(client_socket)
+    client_socket.close()
+    del clients[client_socket]
+    send_str = "%s has left the chat." % name
+
+    print(send_str)
+    send_to_clients(send_str)
+
+
+def client_game_event(msg, client_socket):
+    server_value = random_value()
+    game_result = play_game(msg, server_value)
+    send_str = "Server choose %s value" % server_value
+
+    print(send_str)
+    send_to_clients(send_str, client_socket)
+    print(game_result)
+    send_to_clients(game_result, client_socket)
 
 
 if __name__ == "__main__":
@@ -103,64 +145,43 @@ if __name__ == "__main__":
 
     with SERVER as server:
         readable_sockets = [server]
-        
+
         while True:
-            r_sockets, w_sockets, e_sockets = select.select(readable_sockets, [], readable_sockets)
+            r_sockets, w_sockets, e_sockets = select.select(readable_sockets,
+                                                            [],
+                                                            readable_sockets)
 
             for r_socket in r_sockets:
                 if r_socket is server:
                     # new client connected
                     client, client_address = SERVER.accept()
-                    print("%s:%s has connected." % client_address)   
+                    print("%s:%s has connected." % client_address)
 
                     readable_sockets.append(client)
 
-                else:    
+                else:
                     msg = receive_message(r_socket)
                     name = ""
 
-                    try:
-                        # check if client sent username
+                    # check if client sent username
+                    if r_socket in clients:
                         name = clients[r_socket]
-                    except:
-                        if msg in list(clients.values()):
-                            continue
-                        # client sent uniq name
-                        name = msg
-                        welcome = "Welcome %s! If you ever want to quit, press CTRL+C to exit." % name
-                        message = "%s has joined the chat!" % name
+                    else:
+                        if msg not in list(clients.values()):
+                            # client sent uniq name
+                            client_joined_event(msg, r_socket)
 
-                        send_to_clients(welcome, r_socket)
-                        print(message)
-                        send_to_clients(message)
-
-                        clients[r_socket] = name
                         continue
 
-                    
                     # client exit
                     if not msg:
-                        readable_sockets.remove(r_socket)
-                        r_socket.close()
-                        del clients[r_socket]
-                        send_str = "%s has left the chat." % name
-
-                        print(send_str)
-                        send_to_clients(send_str)
-                        continue                    
+                        client_exited_event(name, r_socket)
+                        continue
 
                     is_cmd = msg.startswith("cmd!")
 
                     if name in players:
-                        server_value = random_value()
-                        game_result = play_game(msg, server_value)
-                        send_str = "Server choose %s value" % server_value
-
-                        print(send_str)
-                        send_to_clients(send_str, r_socket)
-                        print(game_result)
-                        send_to_clients(game_result, r_socket)
-
+                        client_game_event(msg, r_socket)
                         players.remove(name)
                     elif is_cmd:
                         handle_cmd(msg, r_socket)
@@ -172,12 +193,9 @@ if __name__ == "__main__":
             for e_socket in e_sockets:
                 readable_sockets.remove(e_socket)
                 send_str = "%s has left the chat." % clients[e_socket]
-                
+
                 print(send_str)
                 send_to_clients(send_str)
                 del clients[e_socket]
-                        
-
-                   
 
     SERVER.close()
