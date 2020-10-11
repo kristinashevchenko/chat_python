@@ -1,18 +1,37 @@
 import socket
 import sys
 from threading import Thread
+import struct
 
 HOST = "127.0.0.1"
 PORT = 0
 USERNAME = ""
-BUFSIZE = 1024
+
+
+def send_data(data):
+    data = bytes(data, "utf-8")
+    # send data size and data
+    client_socket.send(struct.pack('>I', len(data)))
+    client_socket.send(data)
+
+
+def receive_data():
+    # receive first 4 bytes of data as size of data
+    data_size = struct.unpack('>I', client_socket.recv(4))[0]
+    # receive data till received data size is equal to data_size received
+    received_data = b""
+    remaining_data_size = data_size
+    while remaining_data_size != 0:
+        received_data += client_socket.recv(remaining_data_size)
+        remaining_data_size = data_size - len(received_data)
+    return received_data.decode("utf-8")
 
 
 # show received data
 def receive():
     while True:
         try:
-            msg = client_socket.recv(BUFSIZE).decode("utf-8")
+            msg = receive_data()
             print(msg)
 
         except OSError:
@@ -24,7 +43,7 @@ def send():
     while True:
         try:
             send_str = input()
-            client_socket.send(bytes(send_str, "utf-8"))
+            send_data(send_str)
 
         except EOFError:
             client_socket.close()
@@ -47,7 +66,7 @@ if __name__ == "__main__":
         client_socket.bind((HOST, PORT))
         client_socket.connect(("127.0.0.1", 4203))
 
-        client_socket.send(bytes(USERNAME, "utf-8"))
+        send_data(USERNAME)
 
         receive_thread = Thread(target=receive)
         receive_thread.start()

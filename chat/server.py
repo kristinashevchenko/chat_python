@@ -2,13 +2,13 @@ from socket import AF_INET, socket, SOCK_STREAM
 import datetime
 import random
 import select
+import struct
 
 clients = {}
 players = []
 
 HOST = "127.0.0.1"
 PORT = 4203
-BUFSIZ = 1024
 ADDR = (HOST, PORT)
 
 GAME_WIN = {
@@ -89,20 +89,32 @@ def handle_cmd(msg, client):
 
 
 def send_to_clients(msg, client=""):
-    msg = bytes(msg, "utf8")
     if client:
-        client.send(msg)
+        send_data(client, msg)
     else:
         for sock in clients:
-            sock.send(msg)
+            send_data(sock, msg)
 
 
 def receive_message(client):
     try:
-        msg = client.recv(BUFSIZ).decode("utf-8")
-        return msg
+        data_size = struct.unpack('>I', client.recv(4))[0]
+        # receive data till received data size is equal to data_size received
+        received_data = b""
+        remaining_data_size = data_size
+        while remaining_data_size != 0:
+            received_data += client.recv(remaining_data_size)
+            remaining_data_size = data_size - len(received_data)
+        return received_data.decode("utf-8")
     except ConnectionResetError:
         return False
+
+
+def send_data(client_socket, data):
+    data = bytes(data, "utf-8")
+    # send data size and data
+    client_socket.send(struct.pack('>I', len(data)))
+    client_socket.send(data)
 
 
 def client_joined_event(name, client_socket):
