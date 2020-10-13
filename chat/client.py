@@ -48,6 +48,8 @@ def send():
         except EOFError:
             client_socket.close()
             break
+        except ConnectionError:
+            print("You have connection error. Seems server is unavailable")
 
 
 if __name__ == "__main__":
