@@ -1,11 +1,13 @@
 from socket import AF_INET, socket, SOCK_STREAM
+from typing import Dict, List
 import datetime
 import random
 import select
 import struct
 
-clients = {}
-players = []
+clients: Dict[socket, str] = {}
+players: List[str] = []
+
 
 HOST = "127.0.0.1"
 PORT = 4203
