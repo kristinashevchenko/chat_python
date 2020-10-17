@@ -8,14 +8,14 @@ PORT = 0
 USERNAME = ""
 
 
-def send_data(data):
-    data = bytes(data, "utf-8")
+def send_data(data: str):
+    data_to_send = bytes(data, "utf-8")
     # send data size and data
-    client_socket.send(struct.pack('>I', len(data)))
-    client_socket.send(data)
+    client_socket.send(struct.pack('>I', len(data_to_send)))
+    client_socket.send(data_to_send)
 
 
-def receive_data():
+def receive_data() -> str:
     # receive first 4 bytes of data as size of data
     data_size = struct.unpack('>I', client_socket.recv(4))[0]
     # receive data till received data size is equal to data_size received
