@@ -9,7 +9,6 @@ slack = "*"
 python-dotenv = "*"
 slackeventsapi = "*"
 slackclient = "*"
-asyncio = "*"
 
 [dev-packages]
 
