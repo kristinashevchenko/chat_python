@@ -5,9 +5,10 @@ import datetime
 import random
 import select
 import struct
+import json
 
 
-clients: Dict[socket, str] = {}
+clients: Dict[socket, List[str]] = {}
 players: List[str] = []
 
 
@@ -25,22 +26,30 @@ SERVER = socket(AF_INET, SOCK_STREAM)
 SERVER.bind(ADDR)
 
 
-def count_participants(client: socket):
-    send_str = "Server response: %s participants in chat." % len(clients)
+def get_client_names():
+    return [client_name for (k, v) in clients.items() for client_name in v]
+
+
+def count_participants(*args):
+    client = args[0]
+    send_str = "Server response: %s participants in chat." \
+               % len(get_client_names())
 
     server_logger.info(send_str)
     send_to_clients(send_str, client)
 
 
-def get_participants_names(client: socket):
-    client_names = list(clients.values())
+def get_participants_names(*args):
+    client = args[0]
+    client_names = get_client_names()
     send_str = "Server response: Next participants in chat: %s" % client_names
 
     server_logger.info(send_str)
     send_to_clients(send_str, client)
 
 
-def current_server_time(client: socket):
+def current_server_time(*args):
+    client = args[0]
     now = datetime.datetime.now()
     serverTime = now.strftime("%d-%m-%Y %H:%M:%S")
     send_str = "Current date and time %s: " % serverTime
@@ -53,8 +62,9 @@ def random_value() -> str:
     return random.choice(["paper", "rock", "scissors"])
 
 
-def start_game(client: socket):
-    name = clients[client]
+def start_game(*args):
+    client = args[0]
+    name = args[1]
     send_str = "Let's play game, %s!" \
                " Enter 'paper', rock' or 'scissors' value" % name
 
@@ -82,9 +92,9 @@ cmd_handlers = {
 }
 
 
-def handle_cmd(msg: str, client: socket):
+def handle_cmd(msg: str, client: socket, sender_name: str):
     if msg in cmd_handlers.keys():
-        cmd_handlers[msg](client)
+        cmd_handlers[msg](client, sender_name)
     else:
         send_str = "This command is not supported"
 
@@ -92,38 +102,47 @@ def handle_cmd(msg: str, client: socket):
         send_to_clients(send_str, client)
 
 
-def send_to_clients(msg: str, client=""):
+def send_to_clients(msg: str, client="", sender_name=""):
+    msg_obj = {"message_text": msg, "message_type": "text"}
+    if sender_name:
+        msg_obj["sender"] = sender_name
     if client:
-        send_data(client, msg)
+        send_data(client, msg_obj)
     else:
         for sock in clients:
-            send_data(sock, msg)
+            send_data(sock, msg_obj)
 
 
 def receive_message(client: socket):
     try:
-        data_size = struct.unpack('>I', client.recv(4))[0]
+        data_size = struct.unpack(">I", client.recv(4))[0]
         # receive data till received data size is equal to data_size received
         received_data = b""
         remaining_data_size = data_size
         while remaining_data_size != 0:
             received_data += client.recv(remaining_data_size)
             remaining_data_size = data_size - len(received_data)
-        return received_data.decode("utf-8")
+        decoded_data = received_data.decode("utf-8")
+        return json.loads(decoded_data)
     except ConnectionResetError:
         return False
 
 
-def send_data(client_socket: socket, data: str):
-    data_to_send = bytes(data, "utf-8")
-    # send data size and data
-    client_socket.send(struct.pack('>I', len(data_to_send)))
-    client_socket.send(data_to_send)
+def send_data(client_socket: socket, data: object):
+    message_obj = json.dumps(data)
+    data_to_send = bytes(message_obj, "utf-8")
+    try:
+        # send data size and data
+        client_socket.send(struct.pack(">I", len(data_to_send)))
+        client_socket.send(data_to_send)
+    except BaseException:
+        "Error occurred"
 
 
 def client_joined_event(name: str, client_socket: socket):
     welcome = "Welcome %s! " \
-              "If you ever want to quit, press CTRL+C to exit." % name
+              "If you ever want to quit, " \
+              "press CTRL+C or /quit." % name
 
     message = "%s has joined the chat!" % name
 
@@ -131,13 +150,18 @@ def client_joined_event(name: str, client_socket: socket):
     server_logger.info(message)
     send_to_clients(message)
 
-    clients[client_socket] = name
+    if client_socket in clients:
+        clients[client_socket].append(name)
+    else:
+        clients[client_socket] = [name]
 
 
 def client_exited_event(name: str, client_socket: socket):
-    readable_sockets.remove(client_socket)
-    client_socket.close()
-    del clients[client_socket]
+    clients[client_socket].remove(name)
+    if not clients[client_socket]:
+        readable_sockets.remove(client_socket)
+        del clients[client_socket]
+        client_socket.close()
     send_str = "%s has left the chat." % name
 
     server_logger.info(send_str)
@@ -176,23 +200,40 @@ if __name__ == "__main__":
                     readable_sockets.append(client)
 
                 else:
-                    msg = receive_message(r_socket)
+                    msg = ""
                     name = ""
+                    msg_obj = receive_message(r_socket)
+
+                    if msg_obj and "message_text" in msg_obj:
+                        msg = msg_obj["message_text"]
 
                     # check if client sent username
                     if r_socket in clients:
-                        name = clients[r_socket]
+                        name = clients[r_socket][0]
                     else:
-                        if msg not in list(clients.values()):
+                        if msg not in get_client_names():
                             # client sent uniq name
                             client_joined_event(msg, r_socket)
-
                         continue
 
                     # client exit
-                    if not msg:
+                    if not msg_obj:
                         client_exited_event(name, r_socket)
                         continue
+
+                    if "message_type" in msg_obj:
+                        msg_type = msg_obj["message_type"]
+
+                        if msg_type == "user_added" \
+                                and msg not in get_client_names():
+                            client_joined_event(msg, r_socket)
+                            continue
+                        elif msg_type == "user_removed":
+                            client_exited_event(msg, r_socket)
+                            continue
+
+                    if "sender" in msg_obj:
+                        name = msg_obj["sender"]
 
                     is_cmd = msg.startswith("cmd!")
 
@@ -200,11 +241,14 @@ if __name__ == "__main__":
                         client_game_event(msg, r_socket)
                         players.remove(name)
                     elif is_cmd:
-                        handle_cmd(msg, r_socket)
+                        handle_cmd(msg, r_socket, name)
+                    elif msg == "/quit":
+                        send_to_clients("/quit", r_socket)
+                        client_exited_event(name, r_socket)
                     else:
                         send_str = "%s: %s" % (name, msg)
                         server_logger.info(send_str)
-                        send_to_clients(send_str)
+                        send_to_clients(send_str, sender_name=name)
 
             for e_socket in e_sockets:
                 readable_sockets.remove(e_socket)
