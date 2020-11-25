@@ -1,4 +1,5 @@
 import os
+import sys
 from slack import WebClient
 from dotenv import load_dotenv  # type: ignore
 from flask import Flask
@@ -7,11 +8,15 @@ from socket import socket, AF_INET, SOCK_STREAM
 import struct
 from json import dumps, loads
 from threading import Thread
-from typing import List
-from slackbot_logging import bot_logger
+from typing import Dict, List
 import logging
 import random
 
+
+BASE_PATH = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.append(BASE_PATH)
+
+from bots.slackbot_logging import bot_logger  # noqa: E402
 
 for key in logging.Logger.manager.loggerDict:  # type: ignore
     if key != "botLogger":
@@ -95,7 +100,7 @@ def send_data(data: object) -> None:
     client_socket.send(data_to_send)
 
 
-def receive_data() -> str:
+def receive_data() -> Dict[str, str]:
     check_users_status()
 
     data_size = struct.unpack(">I", client_socket.recv(4))[0]
@@ -127,20 +132,21 @@ if __name__ == "__main__":
     try:
         with open("greetings.json", encoding="utf-8") as f:
             greetings = loads(f.read())
+    except FileNotFoundError:
+        bot_logger.info("File was not found")
 
+    try:
         client_socket = socket(AF_INET, SOCK_STREAM)
         client_socket.bind(("127.0.0.1", 0))
         client_socket.connect(("127.0.0.1", 4203))
 
         send_data({"message_text": bot_id, "message_type": "username"})
+        receive_thread = Thread(target=receive_messages, daemon=True)
+        receive_thread.start()
 
-    except FileNotFoundError:
-        bot_logger.info("File was not found")
     except ConnectionRefusedError:
         bot_logger.info("Can not connect to server")
-    except BaseException:
+    except Exception:
         bot_logger.info("Error occurred while connecting server")
 
-    receive_thread = Thread(target=receive_messages, daemon=True)
-    receive_thread.start()
     app.run(debug=True, port=8085, use_reloader=False)

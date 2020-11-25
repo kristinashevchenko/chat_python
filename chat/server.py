@@ -51,8 +51,8 @@ def get_participants_names(*args):
 def current_server_time(*args):
     client = args[0]
     now = datetime.datetime.now()
-    serverTime = now.strftime("%d-%m-%Y %H:%M:%S")
-    send_str = "Current date and time %s: " % serverTime
+    server_time = now.strftime("%d-%m-%Y %H:%M:%S")
+    send_str = "Current date and time %s: " % server_time
 
     server_logger.info(send_str)
     send_to_clients(send_str, client)
@@ -102,7 +102,7 @@ def handle_cmd(msg: str, client: socket, sender_name: str):
         send_to_clients(send_str, client)
 
 
-def send_to_clients(msg: str, client="", sender_name=""):
+def send_to_clients(msg: str, client=None, sender_name=""):
     msg_obj = {"message_text": msg, "message_type": "text"}
     if sender_name:
         msg_obj["sender"] = sender_name
@@ -135,7 +135,7 @@ def send_data(client_socket: socket, data: object):
         # send data size and data
         client_socket.send(struct.pack(">I", len(data_to_send)))
         client_socket.send(data_to_send)
-    except BaseException:
+    except Exception:
         "Error occurred"
 
 
@@ -179,6 +179,50 @@ def client_game_event(msg: str, client_socket: socket):
     send_to_clients(game_result, client_socket)
 
 
+def check_message(msg_obj: Dict[str, str], r_socket: socket):
+    name = ""
+    if r_socket in clients:
+        name = clients[r_socket][0]
+
+    if not msg_obj:
+        client_exited_event(name, r_socket)
+        return
+
+    msg = msg_obj.get("message_text", "")
+    msg_type = msg_obj.get("message_type", "")
+
+    if not name:
+        if msg not in get_client_names():
+            # client sent unique name
+            client_joined_event(msg, r_socket)
+        return
+
+    if msg_type:
+        if msg_type == "user_added" \
+                and msg not in get_client_names():
+            client_joined_event(msg, r_socket)
+            return
+        elif msg_type == "user_removed":
+            client_exited_event(msg, r_socket)
+            return
+
+    name = msg_obj.get("sender", name)
+    is_cmd = msg.startswith("cmd!")
+
+    if name in players:
+        client_game_event(msg, r_socket)
+        players.remove(name)
+    elif is_cmd:
+        handle_cmd(msg, r_socket, name)
+    elif msg == "/quit":
+        send_to_clients("/quit", r_socket)
+        client_exited_event(name, r_socket)
+    else:
+        send_str = "%s: %s" % (name, msg)
+        server_logger.info(send_str)
+        send_to_clients(send_str, sender_name=name)
+
+
 if __name__ == "__main__":
     SERVER.listen()
     server_logger.info("Waiting for connection...")
@@ -198,61 +242,13 @@ if __name__ == "__main__":
                     server_logger.info("%s:%s has connected." % client_address)
 
                     readable_sockets.append(client)
-
                 else:
-                    msg = ""
-                    name = ""
                     msg_obj = receive_message(r_socket)
-
-                    if msg_obj and "message_text" in msg_obj:
-                        msg = msg_obj["message_text"]
-
-                    # check if client sent username
-                    if r_socket in clients:
-                        name = clients[r_socket][0]
-                    else:
-                        if msg not in get_client_names():
-                            # client sent uniq name
-                            client_joined_event(msg, r_socket)
-                        continue
-
-                    # client exit
-                    if not msg_obj:
-                        client_exited_event(name, r_socket)
-                        continue
-
-                    if "message_type" in msg_obj:
-                        msg_type = msg_obj["message_type"]
-
-                        if msg_type == "user_added" \
-                                and msg not in get_client_names():
-                            client_joined_event(msg, r_socket)
-                            continue
-                        elif msg_type == "user_removed":
-                            client_exited_event(msg, r_socket)
-                            continue
-
-                    if "sender" in msg_obj:
-                        name = msg_obj["sender"]
-
-                    is_cmd = msg.startswith("cmd!")
-
-                    if name in players:
-                        client_game_event(msg, r_socket)
-                        players.remove(name)
-                    elif is_cmd:
-                        handle_cmd(msg, r_socket, name)
-                    elif msg == "/quit":
-                        send_to_clients("/quit", r_socket)
-                        client_exited_event(name, r_socket)
-                    else:
-                        send_str = "%s: %s" % (name, msg)
-                        server_logger.info(send_str)
-                        send_to_clients(send_str, sender_name=name)
+                    check_message(msg_obj, r_socket)
 
             for e_socket in e_sockets:
                 readable_sockets.remove(e_socket)
-                send_str = "%s has left the chat." % clients[e_socket]
+                send_str = "%s has left the chat." % clients[e_socket][0]
 
                 server_logger.info(send_data)
                 send_to_clients(send_str)

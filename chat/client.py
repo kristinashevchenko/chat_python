@@ -3,10 +3,14 @@ import sys
 from threading import Thread
 import struct
 import json
+from typing import Dict
+import logging
 
 HOST = "127.0.0.1"
 PORT = 0
 USERNAME = ""
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger("client")
 
 
 def send_data(message_text: str, message_type: str = "text"):
@@ -19,7 +23,7 @@ def send_data(message_text: str, message_type: str = "text"):
     client_socket.send(data_to_send)
 
 
-def receive_data() -> str:
+def receive_data() -> Dict[str, str]:
     # receive first 4 bytes of data as size of data
     data_size = struct.unpack(">I", client_socket.recv(4))[0]
     # receive data till received data size is equal to data_size received
@@ -37,7 +41,7 @@ def receive():
     while True:
         try:
             msg = receive_data()
-            msg_text = "" if "message_text" not in msg else msg["message_text"]
+            msg_text = msg.get("message_text", "")
             print(msg_text)
 
             if msg_text == "/quit":
@@ -62,7 +66,7 @@ def send():
             client_socket.close()
             break
         except ConnectionError:
-            print("You have connection error. Seems server is unavailable")
+            logger.error("You have connection error. Server is unavailable")
 
 
 if __name__ == "__main__":
@@ -88,5 +92,5 @@ if __name__ == "__main__":
 
         send_thread = Thread(target=send)
         send_thread.start()
-    except BaseException:
-        print("Error occurred while connecting server")
+    except ConnectionRefusedError:
+        logger.error("Error occurred while connecting server")

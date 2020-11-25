@@ -1,7 +1,12 @@
 import time
+import logging
 
 
-class ContextManager():
+logging.basicConfig(level=logging.DEBUG)
+logger = logging.getLogger("time_context_manager")
+
+
+class TimeContextManager:
     def __init__(self, name="function"):
         self.name = name
 
@@ -11,4 +16,4 @@ class ContextManager():
     def __exit__(self, *args):
         end_time = time.time()
         exec_time = end_time - self.time_start
-        print(f'Execution time of {self.name} : {exec_time}')
+        logger.info(f'Execution time of {self.name} : {exec_time}')
