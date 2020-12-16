@@ -30,7 +30,7 @@ ALLOWED_HOSTS = []
 
 # Application definition
 
-INSTALLED_APPS = [
+INTERNAL_DEPENDENCIES = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -38,6 +38,18 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
 ]
+THIRD_PARTY_PACKAGES = [
+    # 'django_extensions',
+    # 'drf_yasg',
+    'rest_framework',
+    'rest_framework.authtoken',
+]
+
+PROJECT_APPS = [
+    'pet_app',
+]
+
+INSTALLED_APPS = INTERNAL_DEPENDENCIES + THIRD_PARTY_PACKAGES + PROJECT_APPS
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
