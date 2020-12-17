@@ -8,20 +8,21 @@ class PetAdmin(admin.ModelAdmin):
         (_('Pet Info'), {'fields': (
             'name',
             'sex',
-            'date_of_birth'
+            'date_of_birth',
+            'date_of_appear',
         )}),
         (_('Spec'), {'fields': (
-            'species',
+            'breed',
         )}),
         (_('Animal spec'), {'fields': (
             'type',
         )}),
     )
 
-    list_filter = ('date_of_birth', )
+    list_filter = ('date_of_birth', 'date_of_appear', )
 
-    ordering = ('date_of_birth', 'name', )
-    search_fields = ('name', 'species', 'sex', )
+    ordering = ('date_of_birth', 'date_of_appear', 'name', )
+    search_fields = ('name', 'sex', 'breed' )
 
 
 # Register your models here.

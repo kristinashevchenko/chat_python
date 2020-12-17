@@ -22,13 +22,19 @@ class PetInputSerializer(serializers.ModelSerializer):
         required_fields = (
             'type',
             'name',
-            'species',
+            'date_of_appear',
+            'date_of_birth',
             'sex',
         )
         optional_fields = (
-            'date_of_birth',
-            'is_dangerous',
+            'has_vaccination',
+            'is_sterilized',
+            'is_prioritized',
             'additional_info',
+            'photo_url',
+            'breed',
+            'is_reserved',
+            'found_home',
         )
 
         fields = required_fields + optional_fields + ('id',)
@@ -50,6 +56,12 @@ class PetInputSerializer(serializers.ModelSerializer):
 
         return date_of_birth_value
 
+    def validate_date_of_appear(self, date_of_appear_value):
+        today = date.today()
+        if today < date_of_appear_value:
+            raise serializers.ValidationError('date_of_appear should be above or today date')
+
+        return date_of_appear_value
 
 class PetOutputSerializer(PetInputSerializer):
     type = AnimalSerializer()
