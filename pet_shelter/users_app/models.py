@@ -18,24 +18,25 @@ class UserManager(BaseUserManager):
 
     def create_customer(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_active', True)
-        extra_fields.setdefault('is_customer', True)
         extra_fields.setdefault('is_staff', False)
-        extra_fields.setdefault('is_superuser', False)
+        extra_fields['is_superuser'] = False
+        extra_fields['is_volunteer'] = False
         user = self._create_user(email, password, **extra_fields)
         return user
 
     def create_volunteer(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_active', True)
-        extra_fields.setdefault('is_volunteer', True)
         extra_fields.setdefault('is_staff', False)
-        extra_fields.setdefault('is_superuser', False)
+        extra_fields['is_superuser'] = False
+        extra_fields['is_customer'] = False
         user = self._create_user(email, password, **extra_fields)
         return user
 
     def create_superuser(self, email, password, **extra_fields):
         extra_fields.setdefault('is_staff', True)
-        extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
+        extra_fields['is_customer'] = False
+        extra_fields['is_volunteer'] = False
         if not extra_fields.get('is_staff'):
             raise ValueError('Superuser must have is_staff=True.')
         if not extra_fields.get('is_superuser'):

@@ -19,6 +19,7 @@ class CustomUserAdmin(UserAdmin):
     )
     list_filter = ('is_staff', 'is_superuser', 'is_volunteer', 'is_active', 'is_customer',)
     list_display = (
+        'id',
         'username',
         'email',
         'first_name',

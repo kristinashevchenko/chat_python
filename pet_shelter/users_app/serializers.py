@@ -11,7 +11,7 @@ def extra_kwargs_factory(fields, **options):
     return {k: options for k in fields}
 
 
-class LoginCustomerSerializer(serializers.Serializer):
+class LoginSerializer(serializers.Serializer):
     username = serializers.CharField(required=True)
     password = serializers.CharField(
         required=True,
@@ -27,7 +27,7 @@ class LoginCustomerSerializer(serializers.Serializer):
         return token.key
 
     def validate_username(self, username):
-        return username.lower()
+        return username
 
     def validate(self, data):
         user = self._find_user(data)
@@ -78,4 +78,25 @@ class CustomerSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ('date_joined',)
         extra_kwargs.update(extra_kwargs_factory(('password',), write_only=True))
+
+
+class VolunteerSerializer(CustomerSerializer):
+
+    def create(self, validated_data):
+        return User.objects.create_volunteer(
+            validated_data.pop('email').lower(),
+            validated_data.pop('password'),
+            **validated_data
+        )
+
+
+class SuperuserSerializer(CustomerSerializer):
+
+    def create(self, validated_data):
+        return User.objects.create_superuser(
+            validated_data.pop('email').lower(),
+            validated_data.pop('password'),
+            **validated_data
+        )
+
 

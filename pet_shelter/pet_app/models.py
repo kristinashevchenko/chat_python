@@ -11,22 +11,22 @@ class Animal(models.Model):
     def __str__(self):
         return self.animal_type
 
+
 class Pet(models.Model):
-    type = models.ForeignKey("Animal", null=False, on_delete=models.PROTECT, related_name="pets")
+    date_of_appear = models.DateField(default=None)
+    date_of_birth = models.DateField(default=None)
     name = models.CharField(max_length=60)
+    type = models.ForeignKey("Animal", null=False, on_delete=models.PROTECT, related_name="pets")
     sex = models.CharField(choices=[('M', 'Male'),
                                     ('F', 'Female'),
                                     ], max_length=10)
-    date_of_appear = models.DateField(default=None)
-    date_of_birth = models.DateField(default=None)
-    has_vaccination = models.BooleanField(default=False)
-    additional_info = models.CharField(max_length=250)
-    is_sterilized = models.BooleanField(default=False)
-    is_prioritized = models.BooleanField(default=False)
+
+    additional_info = models.TextField()
     breed = models.CharField(max_length=80, default='No breed')
+    is_prioritized = models.BooleanField(default=False)
+    is_sterilized = models.BooleanField(default=False)
+    has_vaccination = models.BooleanField(default=False)
     photo_url = models.CharField(max_length=250)
-    is_reserved = models.BooleanField(default=False)
-    found_home = models.BooleanField(default=False)
 
     def calculate_age(self):
         today = date.today()

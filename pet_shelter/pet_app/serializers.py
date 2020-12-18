@@ -33,8 +33,6 @@ class PetInputSerializer(serializers.ModelSerializer):
             'additional_info',
             'photo_url',
             'breed',
-            'is_reserved',
-            'found_home',
         )
 
         fields = required_fields + optional_fields + ('id',)
@@ -62,6 +60,7 @@ class PetInputSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError('date_of_appear should be above or today date')
 
         return date_of_appear_value
+
 
 class PetOutputSerializer(PetInputSerializer):
     type = AnimalSerializer()
