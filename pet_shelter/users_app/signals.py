@@ -7,6 +7,6 @@ from rest_framework.authtoken.models import Token
 @receiver(post_save, sender=get_user_model())
 def create_auth_token(sender, instance=None, created=False, **kwargs):
     if not (instance.is_superuser or instance.is_staff) and (
-            instance.is_customer or instance.is_volonteer
+            instance.is_customer or instance.is_volunteer
     ):
         Token.objects.get_or_create(user=instance)

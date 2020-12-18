@@ -1,4 +1,3 @@
-import uuid
 from django.db import models
 from django.utils.translation import gettext_lazy as _
 from django.contrib.auth.models import AbstractUser, BaseUserManager
@@ -20,39 +19,28 @@ class UserManager(BaseUserManager):
     def create_customer(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_active', True)
         extra_fields.setdefault('is_customer', True)
+        extra_fields.setdefault('is_staff', False)
+        extra_fields.setdefault('is_superuser', False)
         user = self._create_user(email, password, **extra_fields)
         return user
 
-    def create_volonteer(self, email, password=None, **extra_fields):
+    def create_volunteer(self, email, password=None, **extra_fields):
         extra_fields.setdefault('is_active', True)
-        extra_fields.setdefault('is_volonteer', True)
+        extra_fields.setdefault('is_volunteer', True)
+        extra_fields.setdefault('is_staff', False)
+        extra_fields.setdefault('is_superuser', False)
         user = self._create_user(email, password, **extra_fields)
         return user
 
     def create_superuser(self, email, password, **extra_fields):
+        extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
         extra_fields.setdefault('is_active', True)
+        if not extra_fields.get('is_staff'):
+            raise ValueError('Superuser must have is_staff=True.')
         if not extra_fields.get('is_superuser'):
             raise ValueError('Superuser must have is_superuser=True.')
         return self._create_user(email, password, **extra_fields)
-
-    def generate_random_string(self, symbols_count=30):
-        return str(uuid.uuid4())[:symbols_count]
-
-    def generate_random_email(self):
-        return '{}@{}.ae'.format(
-            self.generate_random_string(20),
-            self.generate_random_string(10),
-        )
-
-    # def create_temp_user(self):
-    #     return self.create_user(
-    #         username=self.generate_random_string(),
-    #         email=self.generate_random_email(),
-    #         password=self.generate_random_string(),
-    #         is_temporary=True,
-    #         is_customer=True,
-    #     )
 
 
 class User(AbstractUser):
@@ -60,7 +48,7 @@ class User(AbstractUser):
         default=False,
         help_text=_('Designates whether the user can be managed as customer'),
     )
-    is_volonteer = models.BooleanField(default=False)
+    is_volunteer = models.BooleanField(default=False)
 
     objects = UserManager()
 

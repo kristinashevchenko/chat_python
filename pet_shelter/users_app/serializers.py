@@ -68,7 +68,6 @@ class CustomerSerializer(serializers.ModelSerializer):
             'id',
             'date_joined',
             'token',
-            'is_temporary',
             'addition_info',
             'first_name'
         )
@@ -77,6 +76,6 @@ class CustomerSerializer(serializers.ModelSerializer):
             required=True,
             allow_null=False
         )
-        read_only_fields = ('date_joined', 'is_temporary',)
+        read_only_fields = ('date_joined',)
         extra_kwargs.update(extra_kwargs_factory(('password',), write_only=True))
 

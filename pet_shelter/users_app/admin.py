@@ -13,17 +13,18 @@ class CustomUserAdmin(UserAdmin):
         (None, {'fields': ('username', 'password')}),
         (_('Personal info'), {'fields': ('first_name', 'last_name', 'email')}),
         (_('Permissions'), {
-            'fields': ('is_active', 'is_staff', 'is_superuser', 'is_customer'),
+            'fields': ('is_active', 'is_staff', 'is_volunteer', 'is_superuser', 'is_customer'),
         }),
         (_('Important dates'), {'fields': ('last_login', 'date_joined')}),
     )
-    list_filter = ('is_staff', 'is_superuser', 'is_active', 'is_customer',)
+    list_filter = ('is_staff', 'is_superuser', 'is_volunteer', 'is_active', 'is_customer',)
     list_display = (
         'username',
         'email',
         'first_name',
         'last_name',
         'is_staff',
+        'is_volunteer',
         'is_superuser',
         'is_active',
         'is_customer',
