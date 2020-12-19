@@ -1,4 +1,3 @@
-from django.shortcuts import render
 from rest_framework import viewsets, permissions, response, status, exceptions, mixins
 from rest_framework.decorators import action
 from .serializers import LoginSerializer, CustomerSerializer, VolunteerSerializer, SuperuserSerializer
@@ -58,10 +57,10 @@ class LoginLogoutApiView:
 
 
 # Create your views here.
-class CustomerViewSet(viewsets.GenericViewSet, APIView, MeAbstractApiView, LoginLogoutApiView):
+class CustomerViewSet(viewsets.ModelViewSet, APIView, MeAbstractApiView, LoginLogoutApiView):
 
     queryset = User.objects.filter(is_active=True, is_superuser=False, is_volunteer=False, is_customer=True)
-    permission_classes = [permissions.IsAuthenticated, ]
+    permission_classes = [permissions.IsAuthenticated, IsSuperuser]
     serializer_class = CustomerSerializer
 
     @action(

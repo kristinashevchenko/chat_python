@@ -1,8 +1,8 @@
 from rest_framework import serializers
 from .models import PetRequest
 from datetime import date
-from pet_app.serializers import PetSerializer, PetSerializerWithType
-from users_app.serializers import CustomerSerializer, CustomerSerializerShortDescription
+from pet_app.serializers import PetSerializerWithType
+from users_app.serializers import CustomerSerializerShortDescription
 
 
 def extra_kwargs_factory(fields, **options):
@@ -18,10 +18,10 @@ class PetRequestInputSerializer(serializers.ModelSerializer):
             'pet',
             'user',
             'date_arrive',
-            'status',
         )
         optional_fields = (
             'comment',
+            'status',
         )
 
         fields = required_fields + optional_fields + ('id',)
