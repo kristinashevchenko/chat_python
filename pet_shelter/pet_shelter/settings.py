@@ -72,6 +72,7 @@ THIRD_PARTY_PACKAGES = [
 PROJECT_APPS = [
     'pet_app',
     'users_app',
+    'request_app',
 ]
 
 INSTALLED_APPS = INTERNAL_DEPENDENCIES + THIRD_PARTY_PACKAGES + PROJECT_APPS

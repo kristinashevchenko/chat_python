@@ -69,7 +69,8 @@ class CustomerSerializer(serializers.ModelSerializer):
             'date_joined',
             'token',
             'addition_info',
-            'first_name'
+            'first_name',
+            'is_active'
         )
         extra_kwargs = extra_kwargs_factory(
             required_fields,
@@ -78,6 +79,17 @@ class CustomerSerializer(serializers.ModelSerializer):
         )
         read_only_fields = ('date_joined',)
         extra_kwargs.update(extra_kwargs_factory(('password',), write_only=True))
+
+
+class CustomerSerializerShortDescription(serializers.ModelSerializer):
+
+    class Meta:
+        model = User
+
+        fields = (
+            'username',
+            'email',
+        )
 
 
 class VolunteerSerializer(CustomerSerializer):
@@ -98,5 +110,4 @@ class SuperuserSerializer(CustomerSerializer):
             validated_data.pop('password'),
             **validated_data
         )
-
 

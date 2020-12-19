@@ -14,6 +14,16 @@ class AnimalSerializer(serializers.ModelSerializer):
         fields = '__all__'
 
 
+class AnimalSerializerWithType(serializers.ModelSerializer):
+
+    class Meta:
+        model = Animal
+        fields = ('animal_type', )
+
+    def to_representation(self, instance):
+        return str(instance)
+
+
 class PetInputSerializer(serializers.ModelSerializer):
 
     class Meta:
@@ -42,11 +52,6 @@ class PetInputSerializer(serializers.ModelSerializer):
             extra_kwargs_factory(optional_fields, required=False)
         )
 
-    def validate(self, attrs):
-        print(attrs)
-
-        return attrs
-
     def validate_date_of_birth(self, date_of_birth_value):
         today = date.today()
         if today < date_of_birth_value:
@@ -66,7 +71,17 @@ class PetOutputSerializer(PetInputSerializer):
     type = AnimalSerializer()
 
 
+class PetOutputSerializerWithType(PetInputSerializer):
+    type = AnimalSerializerWithType()
+
+
 class PetSerializer(PetInputSerializer):
 
     def to_representation(self, instance):
         return PetOutputSerializer(instance=instance).data
+
+
+class PetSerializerWithType(PetInputSerializer):
+
+    def to_representation(self, instance):
+        return PetOutputSerializerWithType(instance=instance).data
