@@ -21,6 +21,7 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', False)
         extra_fields['is_superuser'] = False
         extra_fields['is_volunteer'] = False
+        extra_fields['is_customer'] = True
         user = self._create_user(email, password, **extra_fields)
         return user
 
@@ -29,6 +30,7 @@ class UserManager(BaseUserManager):
         extra_fields.setdefault('is_staff', False)
         extra_fields['is_superuser'] = False
         extra_fields['is_customer'] = False
+        extra_fields['is_volunteer'] = True
         user = self._create_user(email, password, **extra_fields)
         return user
 

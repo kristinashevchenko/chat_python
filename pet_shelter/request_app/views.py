@@ -1,8 +1,7 @@
-from django.shortcuts import render
 from rest_framework import viewsets, permissions, exceptions
 from .models import PetRequest, closedStatus, nonAppearanceStatus
 from .serializers import PetSerializer
-from .permissions import IsCustomer, IsVolunteer
+from users_app.permissions import IsCustomer, IsVolunteer
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -27,7 +26,9 @@ class PetRequestView(viewsets.ModelViewSet):
         return super(PetRequestView, self).create(request, *args, **kwargs)
 
     def destroy(self, request, *args, **kwargs):
-        status = request.data['status']
+        pet_request_id = kwargs['pk']
+        pet_request = self.queryset.filter(id=pet_request_id).first()
+        status = pet_request.status
         if status and (status == closedStatus or status == nonAppearanceStatus):
             return super(PetRequestView, self).destroy(request, *args, **kwargs)
 

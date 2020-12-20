@@ -3,7 +3,7 @@ from datetime import date
 
 
 class Animal(models.Model):
-    animal_type = models.CharField(max_length=100)
+    animal_type = models.CharField(max_length=100, unique=True)
 
     def __repr__(self):
         return self.animal_type

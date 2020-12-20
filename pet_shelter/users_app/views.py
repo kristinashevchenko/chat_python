@@ -1,4 +1,4 @@
-from rest_framework import viewsets, permissions, response, status, exceptions, mixins
+from rest_framework import viewsets, permissions, response, status, exceptions
 from rest_framework.decorators import action
 from .serializers import LoginSerializer, CustomerSerializer, VolunteerSerializer, SuperuserSerializer
 from rest_framework.views import APIView
@@ -7,27 +7,6 @@ from .permissions import IsSuperuser
 
 
 User = get_user_model()
-
-
-def _is_superuser_user(user):
-    superuser = User.objects.filter(is_superuser=True, username=user)
-    return True if superuser else False
-
-
-class MeAbstractApiView:
-    @action(
-        methods=['get', 'put', 'patch'],
-        detail=False,
-        url_path='me'
-    )
-    def me(self, request, *args, **kwargs):
-        if request.method in ['PUT', 'PATCH']:
-            serializer = self.get_serializer(request.user, data=request.data, partial=True)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-        else:
-            serializer = self.get_serializer(request.user)
-        return response.Response(data=serializer.data, status=status.HTTP_200_OK)
 
 
 class LoginLogoutApiView:
@@ -57,11 +36,14 @@ class LoginLogoutApiView:
 
 
 # Create your views here.
-class CustomerViewSet(viewsets.ModelViewSet, APIView, MeAbstractApiView, LoginLogoutApiView):
+class CustomerViewSet(viewsets.ModelViewSet, APIView, LoginLogoutApiView):
 
     queryset = User.objects.filter(is_active=True, is_superuser=False, is_volunteer=False, is_customer=True)
     permission_classes = [permissions.IsAuthenticated, IsSuperuser]
     serializer_class = CustomerSerializer
+
+    def create(self, request, *args, **kwargs):
+        raise exceptions.PermissionDenied('Use /register method to create customer')
 
     @action(
         methods=['post'],
@@ -78,30 +60,29 @@ class CustomerViewSet(viewsets.ModelViewSet, APIView, MeAbstractApiView, LoginLo
     def _register_user(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        is_customer = request.data.get('is_customer', False)
+        is_customer = request.data.get('is_customer', True)
         serializer.save(is_customer=is_customer)
 
         return response.Response(data=serializer.data, status=status.HTTP_201_CREATED)
 
 
-class VolunteerViewSet(viewsets.ModelViewSet, APIView, LoginLogoutApiView, MeAbstractApiView):
+class VolunteerViewSet(viewsets.ModelViewSet, APIView, LoginLogoutApiView):
 
     queryset = User.objects.filter(is_active=True, is_superuser=False, is_volunteer=True, is_customer=False)
-    permission_classes = [permissions.IsAuthenticated, IsSuperuser, ]
+    permission_classes = [IsSuperuser, ]
     serializer_class = VolunteerSerializer
 
     @action(
         methods=['post'],
         detail=False,
-        permission_classes=[permissions.IsAuthenticated, ],
+        permission_classes=[IsSuperuser, ],
         url_path='register',
     )
     def register(self, request, *args, **kwargs):
-        if request.user and request.user.is_authenticated\
-                and _is_superuser_user(request.user):
-            return self._register_user(request, *args, **kwargs)
-        else:
-            raise exceptions.PermissionDenied()
+        return self._register_user(request, *args, **kwargs)
+
+    def create(self, request, *args, **kwargs):
+        raise exceptions.PermissionDenied('Use /register method to create volunteer')
 
     def _register_user(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -121,15 +102,11 @@ class SuperuserViewSet(viewsets.GenericViewSet, APIView, LoginLogoutApiView):
     @action(
         methods=['post'],
         detail=False,
-        permission_classes=[permissions.IsAuthenticated, ],
+        permission_classes=[IsSuperuser, ],
         url_path='register',
     )
     def register(self, request, *args, **kwargs):
-        if request.user and request.user.is_authenticated\
-                and _is_superuser_user(request.user):
-            return self._register_user(request, *args, **kwargs)
-        else:
-            raise exceptions.PermissionDenied()
+        return self._register_user(request, *args, **kwargs)
 
     def _register_user(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
