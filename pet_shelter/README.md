@@ -39,15 +39,99 @@ body example:
         "password": "12356Kate",
         "email": "kate_cust@mail.com"
     }
+    
+**4. Create superuser using POST request:**
 
-**4. Add animal type using POST request:**
+Add Header:
+
+
+    key: Authorization
+    value: Token <superuser_token>
+
+url: http://127.0.0.1:8000/api/superusers/register
+
+body example: 
+
+    {
+        "username": "Kate_admin",
+        "password": "12356Kate",
+        "email": "kate_admin@mail.com"
+    }
+    
+**5. Login user using POST request:**
+
+url: http://127.0.0.1:8000/api/customers/login
+
+or
+
+url: http://127.0.0.1:8000/api/volunteers/login
+
+or
+
+url: http://127.0.0.1:8000/api/superusers/login
+
+body example: 
+
+    {
+        "username": "Kate_cust",
+        "password": "12356Kate"
+    }
+    
+**6. Logout user using POST request:**
+
+Add Header:
+
+
+    key: Authorization
+    value: Token <user_token>
+
+url: http://127.0.0.1:8000/api/customers/logout
+
+or
+
+url: http://127.0.0.1:8000/api/volunteers/logout
+
+or
+
+url: http://127.0.0.1:8000/api/superusers/logout
+
+**7. Update/delete/get customer/volunteer using PUT(PATCH)/DELETE/GET request:**
+
+Add Header:
+
+    key: Authorization
+    value: Token <superuser_token>
+    
+url (GET): http://127.0.0.1:8000/api/customers
+
+or
+
+url (GET): http://127.0.0.1:8000/api/volunteers
+
+or
+
+url (PUT, PATCH, GET, DELETE): http://127.0.0.1:8000/api/customers/<customer_id>
+
+or
+
+url (PUT, PATCH, GET, DELETE): http://127.0.0.1:8000/api/volunteers/<volunteer_id>
+
+body example: 
+
+    {
+       "email": "2@1.com"
+    }
+
+**8. Add/update/delete/get animal type using POST/PUT(PATCH)/DELETE/GET request:**
 
 Add Header:
 
     key: Authorization
     value: Token <volunteer_token>
     
-url: http://127.0.0.1:8000/api/animals
+url (POST, GET): http://127.0.0.1:8000/api/animals
+
+url (PUT, PATCH, GET, DELETE): http://127.0.0.1:8000/api/animals/<animal_id>
 
 body example: 
 
@@ -55,7 +139,7 @@ body example:
        "animal_type": "Cat"
     }
               
-**5. Add pet using POST request:**
+**9. Add pet using POST request:**
 
 Add Header:
     
@@ -84,7 +168,7 @@ body example:
         "sex": "F"
     }
 
-**6. To update pet information use PUT request:**
+**10. To update pet information use PUT/PATCH request:**
 
 Add Header:
     
@@ -104,11 +188,20 @@ Update/add smth to body:
         "breed": "Scottish"
     }
     
-**7. To show all pets use GET request:**
+**11. To show all pets or one pet use GET request:**
+
+Add Header:
+    
+    key: Authorization
+    value: Token <user_token>
     
 URL: http://127.0.0.1:8000/api/pets
 
-**8. To sort pets use GET request:**
+or
+
+URL: http://127.0.0.1:8000/api/pets/<pet_id>
+
+**12. To sort pets use GET request with query params:**
     
 URL with one param: http://127.0.0.1:8000/api/pets?key=value
 
@@ -122,7 +215,7 @@ E.g:
     type=Cat
     
 
-**9. To create request on pet use POST request:**
+**13. To create request on pet use POST request:**
 
 Add Header:
     
@@ -148,8 +241,24 @@ Body example:
         "date_arrive": "05-01-2021"
     }
     
+**14. To update pet request use PUT/PATCH request:**
 
-**10. To show all requests use GET request:**
+Add Header:
+    
+    key: Authorization
+    value: Token <volunteer_token>
+    
+url: http://127.0.0.1:8000/api/pet_request/<pet_request_id>
+
+Body example:
+    
+    {
+        "pet": "2",
+        "date_arrive": "06-01-2021"
+    }
+    
+
+**15. To show all requests or one request use GET request:**
 
 Add Header:
     
@@ -157,3 +266,17 @@ Add Header:
     value: Token <volunteer_token>
     
 URL: http://127.0.0.1:8000/api/pet_request
+
+or 
+
+URL: http://127.0.0.1:8000/api/pet_request/<pet_request_id>
+
+
+**16. To delete pet request use DELETE request. You can delete requests only with 'C'/'N' status:**
+
+Add Header:
+    
+    key: Authorization
+    value: Token <volunteer_token>
+    
+URL: http://127.0.0.1:8000/api/pet_request/<pet_request_id>
