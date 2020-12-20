@@ -33,7 +33,7 @@ class PetRequestInputSerializer(serializers.ModelSerializer):
 
     def validate_date_arrive(self, date_arrive_value):
         today = date.today()
-        if today >= date_arrive_value:
+        if today > date_arrive_value:
             raise serializers.ValidationError('date_arrive should be more than today date')
 
         return date_arrive_value

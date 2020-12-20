@@ -46,7 +46,7 @@ class CustomerSerializer(serializers.ModelSerializer):
         return f'addition information for {customer}'
 
     def get_token(self, customer):
-        return customer.token.key
+        return customer.token.key if customer.token else ''
 
     def create(self, validated_data):
         return User.objects.create_customer(
